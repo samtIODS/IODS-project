@@ -1,13 +1,7 @@
+***
+# Thoughts about the Course
 
-# About the project
+Looking forward to learning some **R**. I have a decent bit of experience in programming and data science, but I have done almost nothing in **R** before so that should be interesting. To be honest, not a 100% sure if I'll have the time to finish the course but we'll see. I believe I found the course while browsing **WebOodi**.
 
-*Write a short description about the course and add a link to your GitHub repository here. This is an R Markdown (.Rmd) file so you should use R Markdown syntax.*
-
-```{r}
-# This is a so-called "R chunk" where you can write R code.
-
-date()
-
-```
-The text continues here.
+[GitHub Repository](https://github.com/samtIODS/IODS-project)
 
