@@ -1,13 +1,105 @@
-# Insert chapter 2 title here
+# Regression and model validation
 
-*Describe the work you have done this week and summarize your learning.*
+Exercice 2 analysis
 
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods.
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using.
-
-```{r}
-date()
+```{r echo = FALSE, results = "hide"}
+library(ggplot2)
+library(GGally)
 ```
 
-Here we go again...
+Let's read the dataset to start.
+```{r echo = FALSE}
+learning2014 <- read.csv("./data/learning2014.csv",  header = TRUE)
+```
+
+# 2.1 Read the dataset and explore its dimensions and structure
+Let's look at the dimensions
+```{r echo = FALSE}
+dim(learning2014)
+```
+We can see that the table consists of 166 observations and 7 variables (i.e. 166 rows and 7 columns when viewed as a table).
+
+Now, let's look at the structure
+```{r echo = FALSE}
+str(learning2014)
+
+```
+Both from looking at the data and from the context of the exercise, we can see that each observation encodes a single student: their gender, age, attitude, exam points and the deep (deep approach), stra (strategic approach), surf (surface approach) variables which encode the student's mean answers to sets of questions meant to measure their approached to learning.
+All variables except gender (encoded as strings) are encoded as integers.
+
+# 2.2 Examining the data
+```{r}
+summary(learning2014)
+
+female <- sum(learning2014$gender == "F")
+male <- sum(learning2014$gender == "M")
+print(paste("The datset contains", toString(male), "male and", toString(female), "female students"))
+```
+From above we can see the means, medians, ranges (min, max) and quartiles of the variables. For example, the students' ages range from 21 to 55 with a mean of 25.5 and a median of 22.
+
+110 of the students are female and 56 are male
+
+```{R echo = FALSE}
+ggpairs(learning2014, mapping = aes(alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)))
+```
+
+Other than age, which skews to the younger side, the variables look more or less normally distributes (except gender, of course, which is a categorical variable). Points seem to also have a small peak at the lower side (i.e. a small group of students got a very low amount of points and the rest seem normally distributed around the middle).
+
+The highest correlation (0.43) is between attitude and points. Surface and deep have a moderate negative correlation (-0.32) a well. Maybe a slight correlation between surf and stra and surf and attitude as well.
+
+We also plot data from male and female students separately. 
+```{R echo = FALSE}
+ggpairs(learning2014, mapping = aes(col = gender, alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)))
+```
+
+Doesn't seem to be any major differences except maybe in attitude.  
+
+# 2.3 Building our regression model
+
+Now, let's create our regression model. Points will be dependent variable and we'll choose attitude (attitude toward statistics), stra (strategic approach score) and surf (surface approach score) as the independent variables. The exercise didn't seem to specify which one's we should use so let's just go with these.
+```{r echo = FALSE}
+reg_model <- lm(points ~ attitude + stra + surf, data = learning2014)
+
+
+summary(reg_model)
+```
+We can see that attitude is the only significant variable in the model (i.e p < 0.05). The coefficient for attitude is 3.4 (i.e. when an increase of one in attitude score predicts an increase of 3.4 in exam points). Let's get rid of the non-significant variables and fit a new model. 
+
+# 2.4 Summary of the model.
+
+```{r echo = FALSE}
+reg_model <- lm(points ~ attitude, data = learning2014)
+
+summary(reg_model)
+```
+
+Attitude remains highly significant. With an estimate of ~3.5, the model predicts 3.5 increase in points when attitude increases by one. With an intercept of 11.6 this means that for someone with an attitude of 0 the model would predict a points score of 11.6 and for someone with an attitude of 5 it would predict a points score of 11.6 + 3.5*5 = 29.1. 
+
+R-Squared of 0.19 means that 19% of the variance of the dependent variable (i.e. exam points) can be explained by the the independent variable (attitude).
+
+# 2.5 Diagnostic Plots
+
+Let's do some plots for further investigation. Let's start by plotting residuals vs fitted values.
+
+```{r echo = FALSE}
+plot(reg_model, which = c(1))
+```
+
+Residual variance seems quite constant (maybe slightly smaller at high points but hard to tell due to smaller number of observations as well) across across the fitted values, i.e. the assumption of equal variances seems reasonable.
+
+There are a a few residuals in the -15 - -20 range suggesting possible outliers. 
+```{r echo = FALSE}
+plot(reg_model, which = c(2))
+```
+Q-Q plot appears quite linear suggesting that the data is normally distributed.
+
+```{r echo = FALSE}
+plot(reg_model, which = c(5))
+
+```
+
+Leverage essentially describes how much of an impact a data point has on the model. Note a high-leverage point does not necessarily mean that it's an outlier, it could fit very well with the model but have a high-leverage due to being far away from other data points (We can see this in fact above in fact, the highest-leverage point (approx 0.04) in the data has a fairly small residual). 
+
+Regardless, none of the leverages are particularly large and even the relatively larger ones don't appear to have particularly large residuals. 
+
+In summary, the model assumptions appear valid. 
