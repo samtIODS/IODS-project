@@ -1,0 +1,116 @@
+# Exercise 3 (Logistic regression)
+
+Exercice 3 analysis
+
+```{r echo = FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(GGally)
+library(dplyr)
+```
+
+### 3.2 Read Data
+Start by reading the dataset and looking up the variable names
+```{r}
+alc <- read.table("http://s3.amazonaws.com/assets.datacamp.com/production/course_2218/datasets/alc.txt", header=TRUE,  sep = ",")
+colnames(alc)
+```
+
+The dataset describes students in two Portuguese schools. Each observation describes a single student, including their age, gender, performance at school. For this exercise we'll be mainly looking at alcohol consumption.
+
+### 3.4 Hypotheses about alcohol use 
+
+Specifically, we'll examine the relationship between high alcohol consumption and final student grades (G3), family relationship (famrel), absences, and age.
+
+Intuitively we would expect high alcohol use to correlate with worse grades, possibly worse family relationships, more absences and higher age.
+
+Lets look at grades first.
+
+### 3.5 Exploration 
+
+```{r}
+ggplot(data = alc, aes(x = G3, fill = high_use)) + geom_bar()
+table(highuse = alc$high_use, grades = alc$G3)
+
+ggplot(alc, aes(x = high_use, y = G3)) + geom_boxplot()
+
+```
+Students with the highest grades seem to mostly be in the lower use category.
+
+Let's look at family support next.
+
+```{r}
+ggplot(data = alc, aes(x = famrel, fill = high_use)) + geom_bar()
+table(highuse = alc$high_use, family = alc$famrel)
+
+for (i in sort(unique(alc$famrel))) {
+  sub = alc[alc$famrel==i,]
+  high = sum(sub$high_use==TRUE)
+  low = sum(sub$high_use==FALSE)
+  ratio = round(high/(low + high)*100, digits = 2)
+  print(paste(toString(ratio), "% of students with a family relationship of", toString(i), "are in the high alcohol category."))
+
+}
+```
+It certainly looks like a high family relationship predicts a lower use of alcohol (at least when famrel >= 2. Relatively low number samples in the famrel == 1 category might explain the low ration of high alcohol consumption).
+
+Then absences.
+
+```{r}
+ggplot(data = alc, aes(x = absences, fill = high_use)) + geom_histogram(bins = 20)
+ggplot(alc, aes(x = high_use, y = absences)) + geom_boxplot()
+
+```
+
+Hmm... A bit hard to make out, but it looks like those with more absences are more likely to be in the high use category.  
+
+Finally,lets look at age
+```{r}
+ggplot(data = alc, aes(x = age, fill = high_use)) + geom_bar()
+table(highuse = alc$high_use, age = alc$age)
+
+for (i in sort(unique(alc$age))) {
+  sub = alc[alc$age==i,]
+  high = sum(sub$high_use==TRUE)
+  low = sum(sub$high_use==FALSE)
+  ratio = round(high/(low + high)*100, digits = 2)
+  print(paste(toString(ratio), "% of students of the age of", toString(i), "are in the high alcohol category."))
+
+}
+  
+```
+It looks like alcohol consumption somewhat jumps up at at the age 17 and above. 
+
+### 3.5 Logistic Regression 
+
+```{r}
+logreg <- glm(high_use ~ G3 + famrel + absences + age, data = alc, family = "binomial")
+summary(logreg)
+```
+Both family relationship and absences have a significant effect. Neither age or grades have a significant effect.
+
+Let's look at the odd ratios and their 95% confidence intervals.
+
+```{r}
+exp(cbind(coef(logreg), confint(logreg)))
+```
+Increase of one in absences increases the odds of a student being in the high alcohol use category by approximately 1.06. (lower and upper boundaries of 1.03 and 1.10). While this might seem low considering that a student can have lots of absences this can actually a relatively large effect. For example, for a student with 20 absences, the model would predict the odds of being in the high alcohol category would rise to approximately 3.2 times that of a student with no absences.
+
+In contrast, a high family relationship lowers the odds of a student being in the high alcohol category. For example, according to the model the odds of being in the high alcohol category is approximate 0.76 times for a student with a family relationship of 5 than a student with a family relationship of 4. The upper boundary of the confidence interval is below 1 as well giving us some confidence that the 
+
+In summary, the model supports our hypotheses about absences and family relationships, but not grades or age.
+
+### 3.5 Predictive power of the model
+
+Let's explore the predictive power of the model
+
+```{r}
+prob <- predict(logreg, type = "response")
+
+alc <- mutate(alc, probability = prob)
+alc <- mutate(alc, prediction = prob > 0.5)
+table(high_use = alc$high_use, prediction = alc$prediction)
+```
+
+The training error is (98 + 10)/382 = 0.283 with most errors being false negatives. This is certainly better than guessing at 50% probability, but given that only about 30% of students are in the high alcohol use category are in the first place, it's actually not all that much better than just assuming that a student is in the low-alcohol consumption group.
+
+

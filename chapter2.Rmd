@@ -1,8 +1,8 @@
-# Regression and model validation
+# Exercise 2 (Regression and model validation)
 
 Exercice 2 analysis
 
-```{r echo = FALSE, results = "hide"}
+```{r message=FALSE, warning=FALSE}
 library(ggplot2)
 library(GGally)
 ```
@@ -12,7 +12,7 @@ Let's read the dataset to start.
 learning2014 <- read.csv("./data/learning2014.csv",  header = TRUE)
 ```
 
-# 2.1 Read the dataset and explore its dimensions and structure
+### 2.1 Read the dataset and explore its dimensions and structure
 Let's look at the dimensions
 ```{r echo = FALSE}
 dim(learning2014)
@@ -27,7 +27,7 @@ str(learning2014)
 Both from looking at the data and from the context of the exercise, we can see that each observation encodes a single student: their gender, age, attitude, exam points and the deep (deep approach), stra (strategic approach), surf (surface approach) variables which encode the student's mean answers to sets of questions meant to measure their approached to learning.
 All variables except gender (encoded as strings) are encoded as integers.
 
-# 2.2 Examining the data
+### 2.2 Examining the data
 ```{r}
 summary(learning2014)
 
@@ -54,7 +54,7 @@ ggpairs(learning2014, mapping = aes(col = gender, alpha = 0.3), lower = list(com
 
 Doesn't seem to be any major differences except maybe in attitude.  
 
-# 2.3 Building our regression model
+### 2.3 Building our regression model
 
 Now, let's create our regression model. Points will be dependent variable and we'll choose attitude (attitude toward statistics), stra (strategic approach score) and surf (surface approach score) as the independent variables. The exercise didn't seem to specify which one's we should use so let's just go with these.
 ```{r echo = FALSE}
@@ -65,7 +65,7 @@ summary(reg_model)
 ```
 We can see that attitude is the only significant variable in the model (i.e p < 0.05). The coefficient for attitude is 3.4 (i.e. when an increase of one in attitude score predicts an increase of 3.4 in exam points). Let's get rid of the non-significant variables and fit a new model. 
 
-# 2.4 Summary of the model.
+### 2.4 Summary of the model.
 
 ```{r echo = FALSE}
 reg_model <- lm(points ~ attitude, data = learning2014)
@@ -77,7 +77,7 @@ Attitude remains highly significant. With an estimate of ~3.5, the model predict
 
 R-Squared of 0.19 means that 19% of the variance of the dependent variable (i.e. exam points) can be explained by the the independent variable (attitude).
 
-# 2.5 Diagnostic Plots
+### 2.5 Diagnostic Plots
 
 Let's do some plots for further investigation. Let's start by plotting residuals vs fitted values.
 
