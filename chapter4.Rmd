@@ -1,0 +1,180 @@
+# Exercise 4 (Clustering and classification)
+
+Exercice 4 analysis
+
+Let's start by loading the data and looking at its structure.
+
+## 4.2 Loading and exploring the dataset
+
+```{r warning = FALSE, message=FALSE}
+library(MASS)
+
+data(Boston)
+str(Boston)
+```
+The dataset regards housing values in different towns of the Boston metropolitan area. It has 506 observations with 14 variables including the median value of owner-occupied homes in the town (medev), the per capita crime rate of the town (crim), and proportion of non-retail business acres per town (indus). The descriptions for all the variables can be found on [here](http://alumni.media.mit.edu/~tpminka/courses/36-350.2001/hw/hw7/Boston.html).
+
+## 4.3 Graphical overview and summary of the data
+
+Let's plot a correlation matrix to visualize possible correlations between variables.
+
+```{r warning = FALSE, message=FALSE}
+#load the libraries
+library(corrplot)
+library(tidyverse)
+
+#generate and plot correlation matrices
+corr_matrix <- cor(Boston)
+corr_matrix %>% round(digits = 2)
+
+
+corrplot(corr_matrix, method="circle", type = "upper", cl.pos = "b", , order = "hclus", tl.pos = "d", tl.cex = 0.6)
+```
+
+We can see some strong positive correlations including tax-tad, tax-indus, nox-indus, and nox-age. Strong negative correlations include: dis-nox, dis-indus, dis-age, and medv-lstat.
+
+For example if look at nox and dis, we can see a clear relationship. 
+
+```{r}
+ggplot(data = Boston, aes(x = nox, y = dis)) + geom_point()
+```
+
+Now, let's look at the summary.
+
+```{r}
+summary(Boston)
+```
+We can see that there's quite a bit of range in regards to many of the variables. Median value of owner-occupied homes for example varies from $5000 to $50000 (we can see that the dataset is rather old considering how low the prices area).
+
+## 4.4 Standardize the dataset
+
+Let's standardize the dataset with the scale function
+
+```{r}
+scaled_data <- scale(Boston)
+scaled_data <- as.data.frame(scaled_data)
+
+summary(scaled_data)
+```
+What we've done is scale each variable by subtracting the mean from each value and dividing by the standard deviation. This means that the mean of each variable is set to 0 and each value tells us how many standard deviations away from 0 the value is.
+
+Now, let's create a categorical variable of the crime rate.
+
+```{r}
+
+bins <- quantile(scaled_data$crim)
+crime <- cut(scaled_data$crim, breaks = bins, labels = c("low","med_low","med_high","high"), include.lowest = TRUE)
+
+table(crime)
+```
+
+Now, let's replace the old crim variable with the new one.
+
+```{r}
+scaled_data <- dplyr::select(scaled_data, -crim)
+scaled_data <- data.frame(scaled_data, crime)
+```
+
+And now let's split the data into training and test sets.
+
+```{r}
+ind <- sample(nrow(scaled_data), size = nrow(scaled_data)*0.8)
+train <- scaled_data[ind,]
+test <- scaled_data
+```   
+
+## 4.5 Fit the LDA
+
+Let's fit linear discriminant analysis (LDA) using the training set with our new categorial crime variable as the target variable.
+
+```{r}
+lda_fit <- lda(crime ~ ., data = train)
+
+```
+
+Now let's visualize the LDA with a biplot. 
+```{r}
+lda.arrows <- function(x, myscale = 1, arrow.heads = 0.1, color = 'purple', tex = 0.75, choices = c(1,2)) {
+  heads = coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale*heads[,choices[1]],
+         y1 = myscale*heads[,choices[2]],
+         col = color, length = arrow.heads)
+  text(myscale*heads[,choices], labels = row.names(heads), cex = tex, col = color, pos = 3)
+}
+classes = as.numeric(train$crime)
+
+plot(lda_fit, dimen = 2, col = classes)
+lda.arrows(lda_fit, myscale = 2)
+```
+
+
+## 4.6 Predicting the classes
+
+First, let's save and remove the crime variable from the test set.
+
+```{r}
+correct <- test$crime
+test <- dplyr::select(test, -crime)
+```
+
+Now, let's predict
+
+```{r}
+predictions <- predict(lda_fit, newdata = test)
+t <- table(correct = correct, predicted = predictions$class)
+t
+```
+The high class is predicted very well, but low is quite often mistaken as med_low and med_high as med_low. Still, the model seems quite reasonable; almost all of the errors seem are one category away from the real class.
+
+## 4.7 K-means algorithm
+
+Let's reload the dataset, standardize it and calculate the distances between observations.
+```{r}
+data(Boston)
+scaled_data <- scale(Boston)
+dist <- dist(scaled_data)
+```
+Let's first just run a k-means algorithm with 3 clusters.
+```{r, fig.height = 14, fig.width = 15}
+km <-kmeans(scaled_data, centers = 3)
+pairs(scaled_data, col = km$cluster)
+```
+
+Now, let's try to figure out how many clusters we should optimally use by looking at how WCSS (within cluster sum of squares) behaves when we change the number of clusters.
+
+```{r}
+library(ggplot2)
+
+set.seed(123)
+
+k_max <- 20
+twcss <- sapply(1:k_max, function(k){kmeans(scaled_data, k)$tot.withinss})
+
+qplot(x = 1:k_max, y = twcss, geom = 'line')
+```
+
+Based on the big drop around 2, let's use 2 as our number of klusters. 
+
+Now let's run our k-means algorithm.
+
+```{r}
+km <-kmeans(scaled_data, centers = 2)
+scaled_data <- as.data.frame(cbind(scaled_data, km$cluster))
+
+```
+Now let's visualize the clusters.
+```{r, fig.height = 14, fig.width = 14}
+pairs(scaled_data, col = km$cluster)
+```
+It's a little hard to make out. Let's try another way to visualize the clusters.
+
+```{r, fig.height = 15, fig.width = 14, warning = FALSE}
+
+library(GGally)
+
+scaled_data <- data.frame(scaled_data)
+ggpairs(scaled_data, aes(col = as.factor(km$cluster), alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)))
+```
+
+The clusters appear rather distinct now. Blue cluster seems to include mostly towns that have more industry, higher accessibility to highways, higher taxes, have worse air quality (nox), have lower status population, are closer to the Boston employment centers and have lower-valued homes.
