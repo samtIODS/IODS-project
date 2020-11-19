@@ -33,7 +33,7 @@ corrplot(corr_matrix, method="circle", type = "upper", cl.pos = "b", , order = "
 
 We can see some strong positive correlations including tax-tad, tax-indus, nox-indus, and nox-age. Strong negative correlations include: dis-nox, dis-indus, dis-age, and medv-lstat.
 
-For example if look at nox and dis, we can see a clear relationship. 
+For example if look at nox (nitrogen oxides concentration) and dis (distance to Boston employment centres), we can see a clear relationship.
 
 ```{r}
 ggplot(data = Boston, aes(x = nox, y = dis)) + geom_point()
@@ -140,6 +140,8 @@ Let's first just run a k-means algorithm with 3 clusters.
 km <-kmeans(scaled_data, centers = 3)
 pairs(scaled_data, col = km$cluster)
 ```
+
+Hmm... can't make too much sense out of the clusters with this visualization. Let's get back to this later.
 
 Now, let's try to figure out how many clusters we should optimally use by looking at how WCSS (within cluster sum of squares) behaves when we change the number of clusters.
 

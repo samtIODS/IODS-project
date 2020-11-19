@@ -1,6 +1,5 @@
 #Samuel Tuhkanen, 17.11.2020
 #Week 4: Data Wrangling
-
 #Read the “Human development” and “Gender inequality” datas
 hd <- read.csv("http://s3.amazonaws.com/assets.datacamp.com/production/course_2218/datasets/human_development.csv", stringsAsFactors = F)
 gii <- read.csv("http://s3.amazonaws.com/assets.datacamp.com/production/course_2218/datasets/gender_inequality.csv", stringsAsFactors = F, na.strings = "..")
@@ -23,6 +22,8 @@ colnames(gii) <- c('GII.Rank', 'Country', 'GII', 'MatMor', 'AdoBirthRate', 'Parl
 
 
 #new education ratio and labour force participation ratio variables 
+library(dplyr)
+
 gii <- gii %>% mutate(EduRatio = SecEduF/SecEduM)
 gii <- gii %>% mutate(LabRatio = LabourF/LabourM)
 
