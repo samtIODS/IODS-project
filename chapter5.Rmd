@@ -104,7 +104,7 @@ The dataset describes participant's answers to a questionnaire on tea. There are
 ```{r}
 mca <- MCA(tea_data, graph = FALSE)
 
-str(mca)
+summary(mca)
 
 plot(mca, invisible=c("ind"), habillage = "quali")
 ```
