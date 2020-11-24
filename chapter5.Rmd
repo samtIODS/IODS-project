@@ -1,0 +1,113 @@
+# Exercise 5 (Dimensionality reduction techniques)
+
+Exercice 5 analysis
+
+```{r echo = FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(GGally)
+library(dplyr)
+library(corrplot)
+```
+
+
+## 5.1 Graphical overview
+
+Let's start by loading the data and looking at its structure.
+
+```{r}
+human <- read.csv('./data/human.csv', row.names = 1)
+
+str(human)
+
+```
+The data contains 155 rows with 8 variables. Each row describes a single country's life expectancy (Life.Exp), maternal mortality rate (Mat.Mor), expected years of schooling (Edu.Exp), gross national income per capita (GNI), adolescent birth rate (ado.birth), proportion of women in parliament (Parli.F), female/male ratio in labour force (Labo.FM) and female/male ratio who have attained secondary level education (Edu2.FM).
+
+Next, we'll print out the summaries of the variables.
+```{r}
+summary(human)
+```
+
+Let's look at some visualizations.
+
+```{r}
+ggpairs(human)
+
+cor(human) %>% corrplot(method="circle", type = "upper", cl.pos = "b", , order = "hclus", tl.pos = "d", tl.cex = 0.6)
+```
+
+In terms of distributions, it's clear that many of the variables **do not ** follow a normal distribution. For example GNI is heavily skewed to the left.
+
+In terms of relationships, We can see correlations between many of the variables. For example, maternal mortality has a negative correlation with Life.Exp, Edu.Exp and Edu2.FM and a positive correlation with Ado.Birth. Life expectancy on the other hand has a positive correlation with Edu.Exp, GNI and Edu2.FM.
+
+## 5.2 Principal component analysis
+
+Let's perform a PCA on the non-standardized dataset and do a bi-plot for the first two principal components.
+
+```{r fig.width = 8, fig.height= 8}
+pca_human <- prcomp(human)
+summary(pca_human)
+biplot(pca_human, choices = 1:2, cex = c(0.8, 1), col = c("grey40", "deeppink2"))
+```
+
+We can see that effectively all (99.99%) of the variance in the data is explained by the PC1 component (which seems to be mainly driven by GNI). This is not very useful. Let's see if we can do better by standardizing the data.
+
+## 5.3-5.4 PCA after standardization of the variables
+
+First, lets standardize all the variables.
+
+```{r}
+human_scaled <- scale(human)
+```
+
+Now lets re-do the pca and the bi-plot.
+
+```{r fig.width = 8, fig.height= 8}
+pca_human_std <- prcomp(human_scaled)
+  
+summary(pca_human_std)
+biplot(pca_human_std, choices = 1:2, cex = c(0.8, 1), col = c("grey40", "deeppink2"))
+
+```
+
+When looking at the dimensions of the first two principal components, we can see that higher Edu.Exp, GNI, Edu2.FM and Life.Exp drive PC1 to the left whereas higher Mat.Mor and Ado.Birth to the right. PC2 is mainly contributed to by Parl.F and Labo.FM.
+
+Based on this, we can see that richer and more developed countries (countries with higher GNI,education and life expectancy) tend to be situated on the left and poorer ones on the right. Countries with higher female representation in parliament and/or participation in the labour force trend upwards and countries with lower female labor participation and parliamentary representation downward. For example, Iceland which is both highly developed and has high female participation in the workforce and parliament is on the upper left whereas Qatar which is rich but has low female representation in parliament and workforce is on lower right.
+
+## 5.5 Tea dataset
+
+Let's load and look at the dataset
+
+```{r}
+library(FactoMineR)
+library(tidyr)
+
+data(tea)
+
+summary(tea)
+str(tea)
+```
+
+There's a lot of stuff, so let's only include the variables we are interested in (same as in the datacamp exercise).
+
+```{r}
+keep_columns <- c("Tea", "How", "how", "sugar", "where", "lunch")
+tea_data <- dplyr::select(tea, one_of(keep_columns))
+
+dim(tea_data)
+str(tea_data)
+gather(tea_data) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+
+```
+
+The dataset describes participant's answers to a questionnaire on tea. There are 300 rows and 6 variables now. Next, we'll conduct and visualize the MCA.
+
+```{r}
+mca <- MCA(tea_data, graph = FALSE)
+
+str(mca)
+
+plot(mca, invisible=c("ind"), habillage = "quali")
+```
+
+Color indicates which variable the category belongs and distance between points measures their similarity. For example those who buy/use unpackaged tea also tend to buy from tea shops whereas as those who use/buy tea bags tend to buy from chain stores.
+
