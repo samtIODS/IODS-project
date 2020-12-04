@@ -56,11 +56,9 @@ Hmmm... there doesn't appear to be any major shifts between the rats.
 Now let's do a mean weight development for the three group of rats.
 
 ```{r}
-n <- RATSL$Time %>% unique() %>% length()
-
 RATSS <- RATSL %>%
   group_by(Group, Time) %>%
-  summarise( mean=mean(Weight), se=sd(Weight)/sqrt(n) ) %>%
+  summarise( mean=mean(Weight), se=sd(Weight)/sqrt(length(Weight)) ) %>%
   ungroup()
 
 p1 <- ggplot(RATSS, aes(x = Time, y = mean, linetype = Group, shape = Group))
